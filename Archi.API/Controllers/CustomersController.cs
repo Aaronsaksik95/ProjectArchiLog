@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Archi.API.Data;
 using Archi.API.Models;
+using System.Reflection;
 
 namespace Archi.API.Controllers
 {
@@ -103,107 +104,124 @@ namespace Archi.API.Controllers
         }
         */
 
-
-        //GET: api/customers/filters?Fistname=xxxx,lucas&Lastname=xx
+        //CETTE PARTIE LA A REGARDER
+        //GET: api/customers/filters?Email=string
+        //+e=xxxx,lucas&Lastname=xx
         [HttpGet("filters")]
         public async Task<ActionResult<IEnumerable<Customer>>> GetFiltersValeur()
         {
-            //Request.QueryString.name est égale à un des champs de customer
-            //si oui afficher la liste des customers qui contient la Request.QueryString.value
-
-            foreach (var item in Request.Query) //dans l'url après ?, item prend chaque morceau séparé par &
+            IQueryable<Customer> query = _context.Customers.Where(x => x.Active == true); //fonction pas asynchrone, récupère la table de Customers
+            foreach (var item in Request.Query) //parcourt l'url (dans l'url après ?, item prend chaque morceau séparé par &)
             {
-                var prop = typeof(Customer).GetProperty(item.Key, System.Reflection.BindingFlags.IgnoreCase); //GetProperty va récupérer tous les champs de Customer
-                if (prop != null)
+                Type propbis = typeof(Customer);
+                /*var property2 = propbis.GetProperties();
+                foreach (var propInf in property2)
                 {
-                    value
+                    var xxx = propInf.Name;
+                    
+                    if (propInf.Name == item.Key)
+                    {
+                        var valeur = item.Value;
+                        query = query.Where(x => propInf.GetValue(x) == valeur); //fonctionne pas car propInf.Name (à la place de propInf) n'est pas de type PropertyInfo
+                        break;
+                    }
+                    else
+                    {
+                        return NotFound();
+                    }
+                    
+                    
+                }*/
+                //Fonctionne pas car prop est null alors qu'il devrait être égale à firstname
+                //Type propbis = typeof(Customer);
+                var prop = propbis.GetProperty(item.Key, System.Reflection.BindingFlags.IgnoreCase); //le type de customer . getProperty va chercher une propriété soit la clé de item en ignorant majuscule et minuscule
+                //GetProperty recherche la propriété spécifiée, à l'aide des contraintes de liaison spécifiées.
+                if (prop != null) // si la clé et le champ de Customer se correspondent
+                {
+                    var valeur = item.Value; // va chercher la valeur dans l'url (soit toto ici)
+                    query = query.Where(x => prop.GetValue(x) == valeur); //on passe par prop et la condition est la valeur de prop (soit la valeur du champ de prop de la table Customer) == valeur (soit la valeur de l'url)
+                    // GetValue retourne la valeur de la propriété d'un objet spécifié.
+                }
+                else
+                {
+                    return NotFound();
                 }
             }
-            return query;
-
-            var query = _context.Customers.Where(x => x.Active == true);
-
-            for (int i = 0; i < tab.Length; i++)
-            {
-                if _context.Customers.Find()
-                query = query.Where(x => x.Firstname == tab[i]);
-            }
-            return await query.ToListAsync();
-
-
-        }
-
-        /*
-        //GET: api/customers/filters?lastname=xxxx,lucas
-        [HttpGet("filters")]
-        public async Task<ActionResult<IEnumerable<Customer>>> GetFiltersValeur(string lastname)
-        {
-            string[] val = lastname.Split(",");
-            var item = await _context.Customers.Where(x => x.Active == true).Where(x => x.Lastname == val[0] || x.Lastname == val[1]).ToListAsync();
-            return item;
-        }
-        */
-
-
-
-        /*
-        //GET: api/customers/filters?name=aaron,lucas,leo
-        [HttpGet("filters")]
-        public async Task<ActionResult<IEnumerable<Customer>>> GetFiltersValeur(string firstname, string lastname, string email)
-        {
-            string[] val = firstname.Split(",");
-            var query = _context.Customers.Where(x => x.Active == true);
-
-            for (int i = 0; i < firstname.Length; i++)
-            {
-                query = query.Where(x => x.Firstname == val[i]);
-            }
             return await query.ToListAsync();
         }
-        */
+
+
+    /*
+    //GET: api/customers/filters?lastname=xxxx,lucas
+    [HttpGet("filters")]
+    public async Task<ActionResult<IEnumerable<Customer>>> GetFiltersValeur(string lastname)
+    {
+        string[] val = lastname.Split(",");
+        var item = await _context.Customers.Where(x => x.Active == true).Where(x => x.Lastname == val[0] || x.Lastname == val[1]).ToListAsync();
+        return item;
+    }
+    */
 
 
 
-        /*
-        //GET: api/customers/filters?lastname=xxxx&firstname=xx
-        [HttpGet("filterss")]
-        public async Task<ActionResult<IEnumerable<Customer>>> GetFilters(string valeur)
+    /*
+    //GET: api/customers/filters?name=aaron,lucas,leo
+    [HttpGet("filters")]
+    public async Task<ActionResult<IEnumerable<Customer>>> GetFiltersValeur(string firstname, string lastname, string email)
+    {
+        string[] val = firstname.Split(",");
+        var query = _context.Customers.Where(x => x.Active == true);
+
+        for (int i = 0; i < firstname.Length; i++)
         {
-            string[] val = valeur.Split(",");
-            var item = _context.Customers.Where(x => x.Active == true).AsQueryable;
-            for (int i=0 ; i<valeur.Length ; i++)
-            {
-                item = item.Where(x => x.Lastname == val[i]).ToListAsync();
-            }
-            return item;
-
+            query = query.Where(x => x.Firstname == val[i]);
         }
-        */
+        return await query.ToListAsync();
+    }
+    */
 
-        /*
-         * public async Task<ActionResult<IEnumerable<Customer>>> GetFiltersValeur(float[] tab, float val)
-         * {
-         *    for (int i = 0; i < tab.Length; ++i)
-              {
-                  tab[i] = val;
-              }
-         * }
-         * */
 
-        /*
-        public async Task<ActionResult<IEnumerable<TModel>>> Range(string range)
+
+    /*
+    //GET: api/customers/filters?lastname=xxxx&firstname=xx
+    [HttpGet("filterss")]
+    public async Task<ActionResult<IEnumerable<Customer>>> GetFilters(string valeur)
+    {
+        string[] val = valeur.Split(",");
+        var item = _context.Customers.Where(x => x.Active == true).AsQueryable;
+        for (int i=0 ; i<valeur.Length ; i++)
         {
-            Console.WriteLine(Request.QueryString);
-            string[] num = range.Split("-");
-            int num1 = int.Parse(num[0]);
-            int num2 = int.Parse(num[1]);
-            var query = await _context.Set<TModel>().Where(x => x.Active == true).Skip(num1).Take(num2).ToListAsync();
-
-            return query;
+            item = item.Where(x => x.Lastname == val[i]).ToListAsync();
         }
-        */
+        return item;
 
-        //type=pizza,pates&rating=4,5&days=sunday
+    }
+    */
+
+    /*
+     * public async Task<ActionResult<IEnumerable<Customer>>> GetFiltersValeur(float[] tab, float val)
+     * {
+     *    for (int i = 0; i < tab.Length; ++i)
+          {
+              tab[i] = val;
+          }
+     * }
+     * */
+
+    /*
+    public async Task<ActionResult<IEnumerable<TModel>>> Range(string range)
+    {
+        Console.WriteLine(Request.QueryString);
+        string[] num = range.Split("-");
+        int num1 = int.Parse(num[0]);
+        int num2 = int.Parse(num[1]);
+        var query = await _context.Set<TModel>().Where(x => x.Active == true).Skip(num1).Take(num2).ToListAsync();
+
+        return query;
+    }
+    */
+
+    //type=pizza,pates&rating=4,5&days=sunday
 
 
 
@@ -212,9 +230,9 @@ namespace Archi.API.Controllers
 
 
 
-        // PUT: api/Customers/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
+    // PUT: api/Customers/5
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPut("{id}")]
         public async Task<IActionResult> PutCustomer(int id, Customer customer) // il va regarder le body si la structure json est la même structure que le customer
         {
             if (id != customer.ID)
