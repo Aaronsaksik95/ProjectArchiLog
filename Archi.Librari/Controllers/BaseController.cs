@@ -22,22 +22,34 @@ namespace Archi.Librari.Controllers
 
         // GET: api/Pizzas
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TModel>>> GetAll(string range, string asc, string desc)
+        public async Task<ActionResult<IEnumerable<TModel>>> GetAll()
         {
             var query = _context.Set<TModel>().Where(x => x.Active == true);
-            if (!String.IsNullOrEmpty(range))
+            
+            foreach (String key in Request.Query.Keys)
             {
-                query = Range(range, query);
+                var value = Request.Query[key];
+                if (key == "range")
+                {
+                    query = Range(value, query);
+                }
+
+                else if (key == "asc")
+                {
+                    query = Ascending(value, query);
+                }
+
+                else if (key == "desc")
+                {
+                    query = Descending(value, query);
+                }
+
+                else
+                {
+                    query = Filtering(key, value, query);
+                }
             }
 
-            if (!String.IsNullOrEmpty(asc))
-            {
-                query = Ascending(asc, query);
-            }
-            else if (!String.IsNullOrEmpty(desc))
-            {
-                query = Descending(desc, query);
-            }
             return await query.ToListAsync();
         }
 
@@ -148,6 +160,13 @@ namespace Archi.Librari.Controllers
             var result = orderByGeneric.Invoke(null, new object[] { query, lambda });
             
             return ((IOrderedQueryable<TModel>)result);
+        }
+
+        protected IQueryable<TModel> Filtering(string key, string value, IQueryable<TModel> query)
+        { 
+            var prop = typeof(TModel).GetProperty(key, System.Reflection.BindingFlags.IgnoreCase);
+            query = query.Where(x => prop.GetValue(x).ToString() == value);
+            return query;
         }
 
         private bool ModelExists(int id)
