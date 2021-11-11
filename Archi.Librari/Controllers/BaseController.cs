@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -21,18 +22,34 @@ namespace Archi.Librari.Controllers
 
         // GET: api/Pizzas
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TModel>>> GetAll(string range, string asc)
+        public async Task<ActionResult<IEnumerable<TModel>>> GetAll()
         {
             var query = _context.Set<TModel>().Where(x => x.Active == true);
-            if (!String.IsNullOrEmpty(range))
+            
+            foreach (String key in Request.Query.Keys)
             {
-                query = Range(range, query);
+                var value = Request.Query[key];
+                if (key == "range")
+                {
+                    query = Range(value, query);
+                }
+
+                else if (key == "asc")
+                {
+                    query = Ascending(value, query);
+                }
+
+                else if (key == "desc")
+                {
+                    query = Descending(value, query);
+                }
+
+                else
+                {
+                    query = Filtering(key, value, query);
+                }
             }
 
-            if (!String.IsNullOrEmpty(asc))
-            {
-                return await Sorting(asc, query).ToListAsync();
-            }
             return await query.ToListAsync();
         }
 
@@ -113,12 +130,43 @@ namespace Archi.Librari.Controllers
             return query;
         }
 
-        protected IOrderedQueryable<TModel> Sorting(string asc, IQueryable<TModel> query)
+        protected IQueryable<TModel> Ascending(string asc, IQueryable<TModel> query)
         {
-            var propertyInfo = typeof(TModel).GetProperty(asc);
-            Console.WriteLine(propertyInfo);
-            var query2 = query.OrderBy(y => y.GetType().GetProperty(asc, System.Reflection.BindingFlags.IgnoreCase));
-            return query2;
+            // LAMBDA: x => x.[PropertyName]
+            var parameter = Expression.Parameter(typeof(TModel), "x");
+
+            Expression property = Expression.Property(parameter, asc);
+            var lambda = Expression.Lambda(property, parameter);
+
+            // REFLECTION: source.OrderBy(x => x.Property)
+            var orderByMethod = typeof(Queryable).GetMethods().First(x => x.Name == "OrderBy" && x.GetParameters().Length == 2);
+            var orderByGeneric = orderByMethod.MakeGenericMethod(typeof(TModel), property.Type);
+            var result = orderByGeneric.Invoke(null, new object[] { query, lambda });
+
+            return ((IOrderedQueryable<TModel>)result);
+        }
+
+        protected IQueryable<TModel> Descending(string desc, IQueryable<TModel> query)
+        {
+            // LAMBDA: x => x.[PropertyName]
+            var parameter = Expression.Parameter(typeof(TModel), "x");
+            
+            Expression property = Expression.Property(parameter, desc);
+            var lambda = Expression.Lambda(property, parameter);
+            
+            // REFLECTION: source.OrderBy(x => x.Property)
+            var orderByMethod = typeof(Queryable).GetMethods().First(x => x.Name == "OrderByDescending" && x.GetParameters().Length == 2);
+            var orderByGeneric = orderByMethod.MakeGenericMethod(typeof(TModel), property.Type);
+            var result = orderByGeneric.Invoke(null, new object[] { query, lambda });
+            
+            return ((IOrderedQueryable<TModel>)result);
+        }
+
+        protected IQueryable<TModel> Filtering(string key, string value, IQueryable<TModel> query)
+        { 
+            var prop = typeof(TModel).GetProperty(key, System.Reflection.BindingFlags.IgnoreCase);
+            query = query.Where(x => prop.GetValue(x).ToString() == value);
+            return query;
         }
 
         private bool ModelExists(int id)
@@ -126,4 +174,4 @@ namespace Archi.Librari.Controllers
             return _context.Set<TModel>().Any(e => e.ID == id);
         }
     }
-}                                                
+}
