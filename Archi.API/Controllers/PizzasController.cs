@@ -8,26 +8,37 @@ using Microsoft.EntityFrameworkCore;
 using Archi.API.Data;
 using Archi.API.Models;
 using Archi.Librari.Controllers;
+using System.Text.RegularExpressions;
 
 namespace Archi.API.Controllers
-{
+{ 
+    public static class MyStringExtensions
+    {
+        public static bool Like(this string toSearch, string toFind)
+        {
+            return new Regex(@"\A" + new Regex(@"\.|\$|\^|\{|\[|\(|\||\)|\*|\+|\?|\\").Replace(toFind, ch => @"\" + ch).Replace('_', '.').Replace("%", ".*") + @"\z", RegexOptions.Singleline).IsMatch(toSearch);
+        }
+    }
+
+
+
     [Route("api/[controller]")]
     [ApiController]
     public class PizzasController : BaseController<ArchiDbContext, Pizza>
-    {
+    { 
 
         public PizzasController(ArchiDbContext context):base(context)
         {
         }
 
         // GET: api/Pizzas?name=Margarita
-        //[HttpGet("filters")]
-        //public async Task<ActionResult<IEnumerable<Pizza>>> GetFilters(int price, string name)
-        //{
-        //    var item = await _context.Pizzas.Where(x => x.Price == price).Where(x => x.Name == name).ToListAsync();
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<Pizza>>> Search(string name)
+        {
+           var query = await _context.Pizzas.Where(x => x.Name.Like(name)).ToListAsync();
 
-        //    return item;
-        //}
+            return query;
+        }
 
     }
 }
