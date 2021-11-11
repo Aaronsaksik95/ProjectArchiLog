@@ -19,9 +19,9 @@ namespace Archi.API.Controllers
         public PizzasController(ArchiDbContext context) : base(context)
         {
         }
-  
 
-        // GET: api/Pizzas?name=Margarita
+
+        // GET: api/Pizzas/search?name=san
         [HttpGet("search")]
         public async Task<ActionResult<IEnumerable<Pizza>>> Search(string name)
         {
