@@ -20,13 +20,8 @@ namespace Archi.Librari.Controllers
         }
 
         // GET: api/Pizzas
-<<<<<<< Updated upstream
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TModel>>> GetAll(string range, string asc)
-=======
-        /*[HttpGet]
-        public async Task<ActionResult<IEnumerable<TModel>>> GetAll(string range, string asc, string desc)
->>>>>>> Stashed changes
         {
             var query = _context.Set<TModel>().Where(x => x.Active == true);
             if (!String.IsNullOrEmpty(range))
@@ -37,16 +32,9 @@ namespace Archi.Librari.Controllers
             if (!String.IsNullOrEmpty(asc))
             {
                 return await Sorting(asc, query).ToListAsync();
-<<<<<<< Updated upstream
-=======
-            }
-            else if (!String.IsNullOrEmpty(desc))
-            {
-                return await Sorting(desc, query).ToListAsync();
->>>>>>> Stashed changes
             }
             return await query.ToListAsync();
-        }*/
+        }
 
         // GET: api/Pizzas/5
         [HttpGet("{id}")]
@@ -125,7 +113,6 @@ namespace Archi.Librari.Controllers
             return query;
         }
 
-<<<<<<< Updated upstream
         protected IOrderedQueryable<TModel> Sorting(string asc, IQueryable<TModel> query)
         {
             var propertyInfo = typeof(TModel).GetProperty(asc);
@@ -133,53 +120,6 @@ namespace Archi.Librari.Controllers
             var query2 = query.OrderBy(y => y.GetType().GetProperty(asc, System.Reflection.BindingFlags.IgnoreCase));
             return query2;
         }
-=======
-        // GET: api/Pizzas?asc=price
-        /*[HttpGet]
-        public async Task<ActionResult<IEnumerable<TModel>>> Sorting(string asc, string desc, IQueryable<TModel> query)
-        {
-            if(asc != null)
-            {
-
-                var source = _context.Set<TModel>();
-
-                // LAMBDA: x => x.[PropertyName]
-                var parameter = Expression.Parameter(typeof(TModel), "x");
-
-                Expression property = Expression.Property(parameter, asc);
-                var lambda = Expression.Lambda(property, parameter);
-
-                // REFLECTION: source.OrderBy(x => x.Property)
-                var orderByMethod = typeof(Queryable).GetMethods().First(x => x.Name == "OrderBy" && x.GetParameters().Length == 2);
-                var orderByGeneric = orderByMethod.MakeGenericMethod(typeof(TModel), property.Type);
-                query = (IQueryable<TModel>)orderByGeneric.Invoke(null, new object[] { source, lambda });
-
-                return await ((IOrderedQueryable<TModel>)query).ToListAsync();
-            }
-            if (desc != null)
-            {
-
-                var source = _context.Set<TModel>();
-
-                // LAMBDA: x => x.[PropertyName]
-                var parameter = Expression.Parameter(typeof(TModel), "x");
-
-                Expression property = Expression.Property(parameter, desc);
-                var lambda = Expression.Lambda(property, parameter);
-
-                // REFLECTION: source.OrderBy(x => x.Property)
-                var orderByMethod = typeof(Queryable).GetMethods().First(x => x.Name == "OrderByDescending" && x.GetParameters().Length == 2);
-                var orderByGeneric = orderByMethod.MakeGenericMethod(typeof(TModel), property.Type);
-                query = (IQueryable<TModel>)orderByGeneric.Invoke(null, new object[] { source, lambda });
-
-                return await ((IOrderedQueryable<TModel>)query).ToListAsync();
-            }
-            else
-            {
-                return await _context.Set<TModel>().Where(x => x.Active == true).ToListAsync();
-            }
-        }*/
->>>>>>> Stashed changes
 
         private bool ModelExists(int id)
         {
