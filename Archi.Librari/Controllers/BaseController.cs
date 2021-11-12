@@ -132,6 +132,7 @@ namespace Archi.Librari.Controllers
 
         protected IQueryable<TModel> Ascending(string asc, IQueryable<TModel> query)
         {
+
             // LAMBDA: x => x.[PropertyName]
             var parameter = Expression.Parameter(typeof(TModel), "x");
 
@@ -144,10 +145,12 @@ namespace Archi.Librari.Controllers
             var result = orderByGeneric.Invoke(null, new object[] { query, lambda });
 
             return ((IOrderedQueryable<TModel>)result);
+
         }
 
         protected IQueryable<TModel> Descending(string desc, IQueryable<TModel> query)
         {
+
             // LAMBDA: x => x.[PropertyName]
             var parameter = Expression.Parameter(typeof(TModel), "x");
             
@@ -160,6 +163,7 @@ namespace Archi.Librari.Controllers
             var result = orderByGeneric.Invoke(null, new object[] { query, lambda });
             
             return ((IOrderedQueryable<TModel>)result);
+
         }
 
         protected IQueryable<TModel> Filtering(string key, string value, IQueryable<TModel> query)

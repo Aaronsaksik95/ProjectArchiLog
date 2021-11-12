@@ -25,9 +25,7 @@ namespace Archi.API.Controllers
         [HttpGet("search")]
         public async Task<ActionResult<IEnumerable<Pizza>>> Search(string name)
         {
-
             var results = await _context.Pizzas.Where(X => X.Name.Contains(name) == true).ToListAsync();
-            Console.WriteLine("OEOEOEOEOEOOEOE === "+results);
             return results;
         }
 
