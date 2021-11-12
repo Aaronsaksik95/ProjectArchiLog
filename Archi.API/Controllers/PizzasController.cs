@@ -20,14 +20,13 @@ namespace Archi.API.Controllers
         {
         }
 
-
         // GET: api/Pizzas/search?name=san
-        [HttpGet("search")]
+        /*[HttpGet("search")]
         public async Task<ActionResult<IEnumerable<Pizza>>> Search(string name)
         {
             var results = await _context.Pizzas.Where(X => X.Name.Contains(name) == true).ToListAsync();
             return results;
         }
-
+        */
     }
 }

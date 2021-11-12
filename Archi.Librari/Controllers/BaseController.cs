@@ -43,7 +43,10 @@ namespace Archi.Librari.Controllers
                 {
                     query = Descending(value, query);
                 }
-
+                else if (key == "Search")
+                {
+                    query = Search(key, value, query);
+                }
                 else
                 {
                     query = Filtering(key, value, query);
@@ -171,6 +174,14 @@ namespace Archi.Librari.Controllers
             var prop = typeof(TModel).GetProperty(key, System.Reflection.BindingFlags.IgnoreCase);
             query = query.Where(x => prop.GetValue(x).ToString() == value);
             return query;
+        }
+        // GET: api/Pizzas/search?name=san
+        protected IQueryable<TModel> Search(string key, string name, IQueryable<TModel> query)
+        {
+            //var query = _context.Set<TModel>().Where(x => x.Active == true);
+            var prop = typeof(TModel).GetProperty(key, System.Reflection.BindingFlags.IgnoreCase);
+            var results = query.Where(X => prop.GetValue(X).ToString().Contains(name) == true).ToListAsync();
+            return (IQueryable<TModel>)results;
         }
 
         private bool ModelExists(int id)
