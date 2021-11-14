@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Archi.Librari.Controllers
@@ -13,6 +15,8 @@ namespace Archi.Librari.Controllers
     {
         //Difference entre prive et protected c'est que protected descend dans l'héritage
         protected readonly TContext _context;
+
+        private Expression<Func<TModel, bool>> lambda;
 
         public BaseController(TContext context)
         {
@@ -165,10 +169,13 @@ namespace Archi.Librari.Controllers
         {
             string[] valueSplit = value.Split(",");
             List<Expression> listExp = new List<Expression>();
+
             var parameter = Expression.Parameter(typeof(TModel), "c");
             Expression property = Expression.Property(parameter, key);
 
-            foreach (String itemValue in valueSplit)
+            //var propertyType = ((PropertyInfo)property).PropertyType;
+            //var converter = TypeDescriptor.GetConverter(propertyType);
+            foreach (var itemValue in valueSplit)
             {
                 //var num = int.Parse(itemValue);
 
@@ -177,13 +184,21 @@ namespace Archi.Librari.Controllers
                 listExp.Add(equals);
             }
             Expression[] arrayExp = listExp.ToArray();
-            var lambda = Expression.Lambda<Func<TModel, bool>>(arrayExp[0], parameter);
+
             if (arrayExp.Length > 1)
             {
                 var bothExp = (Expression)Expression.Or(arrayExp[0], arrayExp[1]);
                 lambda = Expression.Lambda<Func<TModel, bool>>(bothExp, parameter);
             }
+
+            else
+            {
+                lambda = Expression.Lambda<Func<TModel, bool>>(arrayExp[0], parameter);
+            }
+
+            //Where(x => x.Name == "olive" || x => x.Name == "margarita")
             query = query.Where(lambda);
+
             return query;
         }
 
