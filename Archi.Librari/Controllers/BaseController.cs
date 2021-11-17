@@ -13,10 +13,12 @@ namespace Archi.Librari.Controllers
 {
     public abstract class BaseController<TContext, TModel> : ControllerBase where TContext : DbContext where TModel : ModelBase
     {
-        //Difference entre prive et protected c'est que protected descend dans l'héritage
         protected readonly TContext _context;
 
         private Expression<Func<TModel, bool>> lambda;
+
+        // LAMBDA: x => x.[PropertyName]
+        private ParameterExpression parameter = Expression.Parameter(typeof(TModel), "x");
 
         public BaseController(TContext context)
         {
@@ -45,6 +47,44 @@ namespace Archi.Librari.Controllers
                 else if (key == "desc")
                 {
                     query = Descending(value, query);
+                }
+
+                else
+                {
+                    query = Filtering(key, value, query);
+                }
+            }
+
+            return await query.ToListAsync();
+        }
+
+        // GET: api/Pizzas/search?name=*san*
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<TModel>>> GetSearch()
+        {
+            var query = _context.Set<TModel>().Where(x => x.Active == true);
+
+            foreach (String key in Request.Query.Keys)
+            {
+                String value = Request.Query[key];
+                if (key == "range")
+                {
+                    query = Range(value, query);
+                }
+
+                else if (key == "asc")
+                {
+                    query = Ascending(value, query);
+                }
+
+                else if (key == "desc")
+                {
+                    query = Descending(value, query);
+                }
+
+                else if (value.StartsWith("*"))
+                {
+                    query = Search(key, value, query);
                 }
 
                 else
@@ -135,9 +175,6 @@ namespace Archi.Librari.Controllers
 
         protected IQueryable<TModel> Ascending(string asc, IQueryable<TModel> query)
         {
-            // LAMBDA: x => x.[PropertyName]
-            var parameter = Expression.Parameter(typeof(TModel), "x");
-
             Expression property = Expression.Property(parameter, asc);
             var lambda = Expression.Lambda(property, parameter);
 
@@ -152,7 +189,6 @@ namespace Archi.Librari.Controllers
         protected IQueryable<TModel> Descending(string desc, IQueryable<TModel> query)
         {
             // LAMBDA: x => x.[PropertyName]
-            var parameter = Expression.Parameter(typeof(TModel), "x");
             
             Expression property = Expression.Property(parameter, desc);
             var lambda = Expression.Lambda(property, parameter);
@@ -170,7 +206,6 @@ namespace Archi.Librari.Controllers
             string[] valueSplit = value.Split(",");
             List<Expression> listExp = new List<Expression>();
 
-            var parameter = Expression.Parameter(typeof(TModel), "c");
             Expression property = Expression.Property(parameter, key);
 
             //var propertyType = ((PropertyInfo)property).PropertyType;
@@ -199,6 +234,17 @@ namespace Archi.Librari.Controllers
             //Where(x => x.Name == "olive" || x => x.Name == "margarita")
             query = query.Where(lambda);
 
+            return query;
+        }
+
+        protected IQueryable<TModel> Search(string key, string value, IQueryable<TModel> query)
+        {
+            Expression property = Expression.Property(parameter, key);
+            MethodInfo method = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+            var someValue = Expression.Constant(string.Join("", value.Split('*')), typeof(string));
+            var containsMethodExp = Expression.Call(property, method, someValue);
+            lambda = Expression.Lambda<Func<TModel, bool>>(containsMethodExp, parameter);
+            query = query.Where(lambda);
             return query;
         }
 
