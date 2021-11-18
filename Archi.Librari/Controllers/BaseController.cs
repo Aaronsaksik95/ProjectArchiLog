@@ -13,11 +13,8 @@ using System.Threading.Tasks;
 
 namespace Archi.Librari.Controllers
 {
-
-
     public abstract class BaseController<TContext, TModel> : ControllerBase where TContext : DbContext where TModel : ModelBase
     {
-        //Difference entre prive et protected c'est que protected descend dans l'héritage
         protected readonly TContext _context;
 
         public BaseController(TContext context)
