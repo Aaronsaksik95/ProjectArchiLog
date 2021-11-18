@@ -131,22 +131,27 @@ namespace Archi.Librari.Controllers
             string[] num = range.Split("-");
             int num1 = int.Parse(num[0]);
             int num2 = int.Parse(num[1]);
+
             int gap = num2 - num1;
             var queryCount = query.Count();
+
             var Schema = Request.Scheme;
             var Host = Request.Host;
+
             query = query.Skip(num1).Take(num2);
 
             //Partie permettant de configurer les headers
             Type isType = typeof(TModel);
             string path = Request.Path;
             string typeName = isType.Name;
-            Response.Headers.Add("Content-Range", range +"/"+queryCount);
-            Response.Headers.Add("Accept-Range", typeName + " 50"); // * = J'ai mis 50 comme dans l'exemple car je ne comprends pas a quoi il correspond
-            string firstPart = Schema + "://" + Host  + path + "?range=0-" + num1;
+            Response.Headers.Add("Content-Range", range + "/" + queryCount);
+            Response.Headers.Add("Accept-Range", typeName + " " + gap);
+
+            string firstPart = Schema + "://" + Host + path + "?range=0-" + num1;
             string prevPart = Schema + "://" + Host + path + "?range="+ ((num1 - 1) - gap)+ "-" + (num1 - 1);
             string nextPart = Schema + "://" + Host + path + "?range=" + (num2 +1) + "-" + ((num2 + 1) + gap);
             string lastPart = Schema + "://" + Host + path + "?range=" + (queryCount - gap) + "-" + queryCount;
+
             Response.Headers.Add("first", firstPart);
             Response.Headers.Add("prev", prevPart);
             Response.Headers.Add("next", nextPart);
