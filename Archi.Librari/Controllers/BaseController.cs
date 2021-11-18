@@ -8,6 +8,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,6 +17,7 @@ namespace Archi.Librari.Controllers
     public abstract class BaseController<TContext, TModel> : ControllerBase where TContext : DbContext where TModel : ModelBase
     {
         protected readonly TContext _context;
+        private ParameterExpression parameter = Expression.Parameter(typeof(TModel), "x");
 
         public BaseController(TContext context)
         {
@@ -44,6 +46,44 @@ namespace Archi.Librari.Controllers
                 else if (key == "desc")
                 {
                     query = Descending(value, query);
+                }
+
+                else
+                {
+                    query = Filtering(key, value, query);
+                }
+            }
+
+            return await query.ToListAsync();
+        }
+
+        // GET: api/Pizzas/search?name=*san*
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<TModel>>> GetSearch()
+        {
+            var query = _context.Set<TModel>().Where(x => x.Active == true);
+
+            foreach (String key in Request.Query.Keys)
+            {
+                String value = Request.Query[key];
+                if (key == "range")
+                {
+                    query = Range(value, query);
+                }
+
+                else if (key == "asc")
+                {
+                    query = Ascending(value, query);
+                }
+
+                else if (key == "desc")
+                {
+                    query = Descending(value, query);
+                }
+
+                else if (value.StartsWith("*"))
+                {
+                    query = Search(key, value, query);
                 }
 
                 else
@@ -197,7 +237,7 @@ namespace Archi.Librari.Controllers
 
             var parameter = Expression.Parameter(typeof(TModel), "c");
             Expression property = Expression.Property(parameter, key);
-
+            Expression<Func<TModel, bool>> lambda;
             //var propertyType = ((PropertyInfo)property).PropertyType;
             //var converter = TypeDescriptor.GetConverter(propertyType);
             foreach (var itemValue in valueSplit)
@@ -222,6 +262,22 @@ namespace Archi.Librari.Controllers
             }
 
             //Where(x => x.Name == "olive" || x => x.Name == "margarita")
+            query = query.Where(lambda);
+
+            return query;
+        }
+
+        protected IQueryable<TModel> Search(string key, string value, IQueryable<TModel> query)
+        {
+            Expression property = Expression.Property(parameter, key);
+            Expression<Func<TModel, bool>> lambda;
+
+            MethodInfo method = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+            var someValue = Expression.Constant(string.Join("", value.Split('*')), typeof(string));
+            var containsMethodExp = Expression.Call(property, method, someValue);
+
+            lambda = Expression.Lambda<Func<TModel, bool>>(containsMethodExp, parameter);
+
             query = query.Where(lambda);
 
             return query;
