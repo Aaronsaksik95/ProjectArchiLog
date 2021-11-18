@@ -122,7 +122,6 @@ namespace Archi.Librari.Controllers
             return NoContent();
         }
 
-
         protected IQueryable<TModel> Range(string range, IQueryable<TModel> query)
         {
             string[] num = range.Split("-");
