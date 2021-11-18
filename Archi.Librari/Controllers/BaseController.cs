@@ -191,9 +191,39 @@ namespace Archi.Librari.Controllers
         }
 
         protected IQueryable<TModel> Filtering(string key, string value, IQueryable<TModel> query)
-        { 
-            var prop = typeof(TModel).GetProperty(key, System.Reflection.BindingFlags.IgnoreCase);
-            query = query.Where(x => prop.GetValue(x).ToString() == value);
+        {
+            string[] valueSplit = value.Split(",");
+            List<Expression> listExp = new List<Expression>();
+
+            var parameter = Expression.Parameter(typeof(TModel), "c");
+            Expression property = Expression.Property(parameter, key);
+
+            //var propertyType = ((PropertyInfo)property).PropertyType;
+            //var converter = TypeDescriptor.GetConverter(propertyType);
+            foreach (var itemValue in valueSplit)
+            {
+                //var num = int.Parse(itemValue);
+
+                var constantExp = Expression.Constant(itemValue, typeof(string));
+                var equals = (Expression)Expression.Equal(property, constantExp);
+                listExp.Add(equals);
+            }
+            Expression[] arrayExp = listExp.ToArray();
+
+            if (arrayExp.Length > 1)
+            {
+                var bothExp = (Expression)Expression.Or(arrayExp[0], arrayExp[1]);
+                lambda = Expression.Lambda<Func<TModel, bool>>(bothExp, parameter);
+            }
+
+            else
+            {
+                lambda = Expression.Lambda<Func<TModel, bool>>(arrayExp[0], parameter);
+            }
+
+            //Where(x => x.Name == "olive" || x => x.Name == "margarita")
+            query = query.Where(lambda);
+
             return query;
         }
 
