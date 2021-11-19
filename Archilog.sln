@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Archi.API", "Archi.API\Arch
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Archi.Librari", "Archi.Librari\Archi.Librari.csproj", "{FA6145BD-517B-41D1-B77E-EBB708F4DA1F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Archi.Test", "TestProject1\Archi.Test.csproj", "{1736A18C-BE64-4AEC-B608-ECA1ECB1596C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{FA6145BD-517B-41D1-B77E-EBB708F4DA1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FA6145BD-517B-41D1-B77E-EBB708F4DA1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FA6145BD-517B-41D1-B77E-EBB708F4DA1F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1736A18C-BE64-4AEC-B608-ECA1ECB1596C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1736A18C-BE64-4AEC-B608-ECA1ECB1596C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1736A18C-BE64-4AEC-B608-ECA1ECB1596C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1736A18C-BE64-4AEC-B608-ECA1ECB1596C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
