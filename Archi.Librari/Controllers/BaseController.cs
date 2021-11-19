@@ -17,6 +17,7 @@ namespace Archi.Librari.Controllers
     public abstract class BaseController<TContext, TModel> : ControllerBase where TContext : DbContext where TModel : ModelBase
     {
         protected readonly TContext _context;
+
         private ParameterExpression parameter = Expression.Parameter(typeof(TModel), "x");
 
         public BaseController(TContext context)
@@ -32,7 +33,7 @@ namespace Archi.Librari.Controllers
             
             foreach (String key in Request.Query.Keys)
             {
-                var value = Request.Query[key];
+                String value = Request.Query[key];
                 if (key == "range")
                 {
                     query = Range(value, query);
@@ -50,7 +51,14 @@ namespace Archi.Librari.Controllers
 
                 else
                 {
-                    query = Filtering(key, value, query);
+                    if (value.StartsWith("["))
+                    {
+                        query = FilteringWithInterval(key, value, query);
+                    }
+                    else
+                    {
+                        query = Filtering(key, value, query);
+                    }
                 }
             }
 
@@ -88,7 +96,15 @@ namespace Archi.Librari.Controllers
 
                 else
                 {
-                    query = Filtering(key, value, query);
+                    if (value.StartsWith("["))
+                    {
+                        query = FilteringWithInterval(key, value, query);
+                    }
+                    else
+                    {
+                        query = Filtering(key, value, query);
+                    }
+                    
                 }
             }
 
@@ -174,9 +190,8 @@ namespace Archi.Librari.Controllers
             var Schema = Request.Scheme;
             var Host = Request.Host;
 
-            query = query.Skip(num1).Take(num2);
+            query = query.Skip(num1).Take(gap+1);
 
-            //Partie permettant de configurer les headers
             Type isType = typeof(TModel);
             string path = Request.Path;
             string typeName = isType.Name;
@@ -200,13 +215,9 @@ namespace Archi.Librari.Controllers
 
         protected IQueryable<TModel> Ascending(string asc, IQueryable<TModel> query)
         {
-            // LAMBDA: x => x.[PropertyName]
-            var parameter = Expression.Parameter(typeof(TModel), "x");
-
             Expression property = Expression.Property(parameter, asc);
             var lambda = Expression.Lambda(property, parameter);
 
-            // REFLECTION: source.OrderBy(x => x.Property)
             var orderByMethod = typeof(Queryable).GetMethods().First(x => x.Name == "OrderBy" && x.GetParameters().Length == 2);
             var orderByGeneric = orderByMethod.MakeGenericMethod(typeof(TModel), property.Type);
             var result = orderByGeneric.Invoke(null, new object[] { query, lambda });
@@ -215,14 +226,10 @@ namespace Archi.Librari.Controllers
         }
 
         protected IQueryable<TModel> Descending(string desc, IQueryable<TModel> query)
-        {
-            // LAMBDA: x => x.[PropertyName]
-            var parameter = Expression.Parameter(typeof(TModel), "x");
-            
+        {   
             Expression property = Expression.Property(parameter, desc);
             var lambda = Expression.Lambda(property, parameter);
             
-            // REFLECTION: source.OrderBy(x => x.Property)
             var orderByMethod = typeof(Queryable).GetMethods().First(x => x.Name == "OrderByDescending" && x.GetParameters().Length == 2);
             var orderByGeneric = orderByMethod.MakeGenericMethod(typeof(TModel), property.Type);
             var result = orderByGeneric.Invoke(null, new object[] { query, lambda });
@@ -233,19 +240,26 @@ namespace Archi.Librari.Controllers
         protected IQueryable<TModel> Filtering(string key, string value, IQueryable<TModel> query)
         {
             string[] valueSplit = value.Split(",");
-            List<Expression> listExp = new List<Expression>();
 
-            var parameter = Expression.Parameter(typeof(TModel), "c");
             Expression property = Expression.Property(parameter, key);
             Expression<Func<TModel, bool>> lambda;
-            //var propertyType = ((PropertyInfo)property).PropertyType;
-            //var converter = TypeDescriptor.GetConverter(propertyType);
+            List<Expression> listExp = new List<Expression>();
+
             foreach (var itemValue in valueSplit)
             {
-                //var num = int.Parse(itemValue);
+                ConstantExpression constantExp;
+                if (Nullable.GetUnderlyingType(property.Type) != null)
+                {
+                    object valueCast = Convert.ChangeType(itemValue, Nullable.GetUnderlyingType(property.Type));
+                    constantExp = Expression.Constant(valueCast);
+                }
+                else
+                {
+                    constantExp = Expression.Constant(itemValue);
+                }
 
-                var constantExp = Expression.Constant(itemValue, typeof(string));
-                var equals = (Expression)Expression.Equal(property, constantExp);
+                var convert = Expression.Convert(constantExp, property.Type);
+                var equals = (Expression)Expression.Equal(property, convert);
                 listExp.Add(equals);
             }
             Expression[] arrayExp = listExp.ToArray();
@@ -261,7 +275,53 @@ namespace Archi.Librari.Controllers
                 lambda = Expression.Lambda<Func<TModel, bool>>(arrayExp[0], parameter);
             }
 
-            //Where(x => x.Name == "olive" || x => x.Name == "margarita")
+            query = query.Where(lambda);
+            
+            return query;
+        }
+
+        protected IQueryable<TModel> FilteringWithInterval(string key, string value, IQueryable<TModel> query)
+        {
+            string[] valueSplit = value.Split(",");
+
+            Expression property = Expression.Property(parameter, key);
+            Expression<Func<TModel, bool>> lambda;
+
+            var lessValue = string.Join("", valueSplit[0].Split('['));
+            var greaterValue = string.Join("", valueSplit[1].Split(']'));
+
+            if (lessValue != "" && greaterValue == "")
+            {
+                object lessValueCast = Convert.ChangeType(lessValue, Nullable.GetUnderlyingType(property.Type));
+                var constantLess = Expression.Constant(lessValueCast);
+                var convertLess = Expression.Convert(constantLess, property.Type);
+                var before = Expression.GreaterThanOrEqual(property, convertLess);
+                lambda = Expression.Lambda<Func<TModel, bool>>(before, parameter);
+            }
+            else if (greaterValue != "" && lessValue == "")
+            {
+                object greaterValueCast = Convert.ChangeType(greaterValue, Nullable.GetUnderlyingType(property.Type));
+                var constantGreater = Expression.Constant(greaterValueCast);
+                var convertGreater = Expression.Convert(constantGreater, property.Type);
+                var after = Expression.LessThanOrEqual(property, convertGreater);
+                lambda = Expression.Lambda<Func<TModel, bool>>(after, parameter);
+            }
+            else
+            {
+                object lessValueCast = Convert.ChangeType(lessValue, Nullable.GetUnderlyingType(property.Type));
+                var constantLess = Expression.Constant(lessValueCast);
+                var convertLess = Expression.Convert(constantLess, property.Type);
+                var before = Expression.GreaterThanOrEqual(property, convertLess);
+
+                object greaterValueCast = Convert.ChangeType(greaterValue, Nullable.GetUnderlyingType(property.Type));
+                var constantGreater = Expression.Constant(greaterValueCast);
+                var convertGreater = Expression.Convert(constantGreater, property.Type);
+                var after = Expression.LessThanOrEqual(property, convertGreater);
+
+                var bothExp = (Expression)Expression.And(before, after);
+                lambda = Expression.Lambda<Func<TModel, bool>>(bothExp, parameter);
+            }
+
             query = query.Where(lambda);
 
             return query;
