@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Archi.API", "Archi.API\Arch
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Archi.Librari", "Archi.Librari\Archi.Librari.csproj", "{FA6145BD-517B-41D1-B77E-EBB708F4DA1F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Archi.Test", "TestProject1\Archi.Test.csproj", "{1736A18C-BE64-4AEC-B608-ECA1ECB1596C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject1", "TestProject1\TestProject1.csproj", "{1736A18C-BE64-4AEC-B608-ECA1ECB1596C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
